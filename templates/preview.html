@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Imprimir {{ filename }} - Yumis' Printer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="preview-body">
+    <div class="preview-backdrop"></div>
+
+    <div id="preview-overlay" class="preview-overlay" role="dialog" aria-modal="true" aria-label="Painel de impressão">
+        <main id="print-modal" class="print-modal panel">
+            <section class="print-preview-area">
+                <header class="preview-header">
+                    <span class="eyebrow">Yumis' Printer</span>
+                    <h1>Confirmar impressão</h1>
+                    <p class="filename">{{ filename }}</p>
+                </header>
+
+                <div class="preview-surface">
+                    {% if preview_kind == 'pdf' %}
+                    <iframe src="{{ url_for('uploaded_file', upload_name=upload_name) }}" title="Pré-visualização do PDF"></iframe>
+                    {% else %}
+                    <img src="{{ url_for('uploaded_file', upload_name=upload_name) }}" alt="Pré-visualização da imagem">
+                    {% endif %}
+                </div>
+            </section>
+
+            <aside class="print-sidebar panel">
+                <div class="sidebar-header">
+                    <span class="eyebrow">Painel de impressão</span>
+                    <h2>Escolha a impressora</h2>
+                    <p>Somente as impressoras liberadas pelo host aparecem aqui.</p>
+                </div>
+
+                <label class="field-label" for="printer_name">Impressora</label>
+                <select id="printer_name" class="input-field">
+                    {% for printer in printers %}
+                    <option value="{{ printer.name }}">{{ printer.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <label class="field-label" for="copies">Cópias</label>
+                <input id="copies" class="input-field" type="number" min="1" max="20" value="1">
+
+                <label class="field-label" for="layout">Layout</label>
+                <select id="layout" class="input-field">
+                    <option value="portrait">Retrato</option>
+                    <option value="landscape">Paisagem</option>
+                </select>
+
+                <label class="field-label" for="color_mode">Cor</label>
+                <select id="color_mode" class="input-field">
+                    <option value="color">Colorido</option>
+                    <option value="grayscale">Preto e branco</option>
+                </select>
+
+                {% if preview_kind == 'pdf' %}
+                <div class="print-options-box">
+                    <span class="field-label">Páginas</span>
+                    <div class="pages-mode-group" role="radiogroup" aria-label="Modo de páginas">
+                        <label class="pages-mode-option">
+                            <input type="radio" name="pages_mode" value="all" checked>
+                            <span>Todas (1-{{ page_count }})</span>
+                        </label>
+                        <label class="pages-mode-option">
+                            <input type="radio" name="pages_mode" value="custom">
+                            <span>Específicas</span>
+                        </label>
+                    </div>
+                    <input
+                        id="page_ranges"
+                        class="input-field"
+                        type="text"
+                        inputmode="text"
+                        placeholder="Ex.: 1-3, 5, 8-10"
+                        disabled
+                    >
+                    <p class="field-hint">Use vírgula para separar páginas ou intervalos. Total: {{ page_count }} páginas.</p>
+                </div>
+                {% endif %}
+
+                <div class="info-box">
+                    <strong>Arquivo:</strong> {{ filename }}<br>
+                    <strong>Fluxo:</strong> pré-visualização local com envio para a fila de impressão do host.
+                </div>
+
+                <div id="result-box" class="result-box hidden"></div>
+
+                <div class="button-row">
+                    <a href="{{ url_for('home') }}" class="secondary-button">Cancelar</a>
+                    <button id="print-button" class="primary-button" type="button">Imprimir agora</button>
+                </div>
+
+                <div class="queue-box">
+                    <span class="eyebrow">Últimos jobs</span>
+                    <div class="queue-list">
+                        {% for job in jobs %}
+                        <div class="queue-item">
+                            <strong>#{{ job.job_id }}</strong>
+                            <span>{{ job.file_name }}</span>
+                            <em>{{ job.status }}</em>
+                        </div>
+                        {% else %}
+                        <div class="queue-item empty">Nenhum job recente.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+        const printButton = document.getElementById('print-button');
+        const resultBox = document.getElementById('result-box');
+        const overlay = document.getElementById('preview-overlay');
+        const printModal = document.getElementById('print-modal');
+        const cancelUrl = "{{ url_for('home') }}";
+        const layoutField = document.getElementById('layout');
+        const colorModeField = document.getElementById('color_mode');
+        const pageRangesField = document.getElementById('page_ranges');
+        const pagesModeInputs = document.querySelectorAll('input[name="pages_mode"]');
+        const isPdfPreview = "{{ preview_kind }}" === "pdf";
+        let activeController = null;
+
+        function showResult(message, isError) {
+            resultBox.textContent = message;
+            resultBox.classList.remove('hidden', 'result-success', 'result-error');
+            resultBox.classList.add(isError ? 'result-error' : 'result-success');
+        }
+
+        function cancelAndClose() {
+            if (activeController) {
+                activeController.abort();
+                activeController = null;
+            }
+            window.location.href = cancelUrl;
+        }
+
+        overlay.addEventListener('click', (event) => {
+            if (!printModal.contains(event.target)) {
+                cancelAndClose();
+            }
+        });
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelAndClose();
+            }
+        });
+
+        function getSelectedPagesMode() {
+            const selected = document.querySelector('input[name="pages_mode"]:checked');
+            return selected ? selected.value : 'all';
+        }
+
+        function syncPagesInputState() {
+            if (!isPdfPreview || !pageRangesField) {
+                return;
+            }
+            const isCustom = getSelectedPagesMode() === 'custom';
+            pageRangesField.disabled = !isCustom;
+            if (!isCustom) {
+                pageRangesField.value = '';
+            }
+        }
+
+        pagesModeInputs.forEach((input) => {
+            input.addEventListener('change', syncPagesInputState);
+        });
+        syncPagesInputState();
+
+        printButton.addEventListener('click', async () => {
+            const pagesMode = isPdfPreview ? getSelectedPagesMode() : 'all';
+            const pageRanges = pageRangesField ? pageRangesField.value.trim() : '';
+            if (isPdfPreview && pagesMode === 'custom' && !pageRanges) {
+                showResult('Informe as páginas específicas para continuar.', true);
+                return;
+            }
+
+            printButton.disabled = true;
+            printButton.textContent = 'Enviando...';
+            activeController = new AbortController();
+
+            try {
+                const response = await fetch("{{ url_for('print_uploaded_file') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    signal: activeController.signal,
+                    body: JSON.stringify({
+                        upload_name: "{{ upload_name }}",
+                        printer_name: document.getElementById('printer_name').value,
+                        copies: document.getElementById('copies').value,
+                        orientation: layoutField ? layoutField.value : 'portrait',
+                        color_mode: colorModeField ? colorModeField.value : 'color',
+                        pages_mode: pagesMode,
+                        page_ranges: pageRanges,
+                    })
+                });
+
+                const payload = await response.json();
+                showResult(payload.message, !payload.ok);
+            } catch (error) {
+                if (error.name !== 'AbortError') {
+                    showResult('Falha ao se comunicar com o servidor local.', true);
+                }
+            } finally {
+                activeController = null;
+                printButton.disabled = false;
+                printButton.textContent = 'Imprimir agora';
+            }
+        });
+    </script>
+</body>
+</html>
