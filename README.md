@@ -72,7 +72,7 @@ Pronto. Simples assim.
 
 ## 📥 Como usar
 
-1. Baixe a versão mais recente em **[Releases](https://github.com/SEU_USUARIO/Yumis-Printer/releases)**
+1. Baixe a versão mais recente em **[Releases](https://github.com/Guilhermossauro/Yumis-Printer/releases)**
 2. Extraia o arquivo
 3. Execute `Yumis' Printer.exe` (Windows)
 4. Permita o acesso na janela do Windows Firewall (se solicitado)
