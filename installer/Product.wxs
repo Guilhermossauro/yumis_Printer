@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product
+    Id="*"
+    Name="Yumis Printer"
+    Language="1033"
+    Version="$(var.ProductVersion)"
+    Manufacturer="Guilherme Aufera"
+    UpgradeCode="2B6AC67A-BD31-44E9-8690-4E59C0A4A5A1">
+
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of Yumis Printer is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="Yumis Printer" />
+      </Directory>
+
+      <Directory Id="ProgramMenuFolder">
+        <Directory Id="ApplicationProgramsFolder" Name="Yumis Printer" />
+      </Directory>
+
+      <Directory Id="DesktopFolder" />
+    </Directory>
+
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="MainExecutableComponent" Guid="8F7279DE-5141-45AA-9388-CECC58BF5AB9" Win64="yes">
+        <File
+          Id="MainExecutable"
+          Source="..\dist\YumisPrinter.exe"
+          Name="YumisPrinter.exe"
+          KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="ApplicationProgramsFolder">
+      <Component Id="StartMenuShortcutComponent" Guid="2489D95D-4C94-4EB2-B44D-53E20A021D6A" Win64="yes">
+        <Shortcut
+          Id="StartMenuShortcut"
+          Name="Yumis Printer"
+          Description="Yumis Printer"
+          Target="[INSTALLFOLDER]YumisPrinter.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RemoveFolder Id="ApplicationProgramsFolder" On="uninstall" />
+        <RegistryValue Root="HKLM" Key="Software\YumisPrinter" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="0D14F96A-73A6-47D2-A6C6-F6C0117A8D11" Win64="yes">
+        <Shortcut
+          Id="DesktopShortcut"
+          Name="Yumis Printer"
+          Description="Yumis Printer"
+          Target="[INSTALLFOLDER]YumisPrinter.exe"
+          WorkingDirectory="INSTALLFOLDER" />
+        <RegistryValue Root="HKLM" Key="Software\YumisPrinter" Name="DesktopShortcut" Type="integer" Value="1" KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+
+    <Feature Id="MainFeature" Title="Yumis Printer" Level="1">
+      <ComponentRef Id="MainExecutableComponent" />
+      <ComponentRef Id="StartMenuShortcutComponent" />
+      <ComponentRef Id="DesktopShortcutComponent" />
+    </Feature>
+
+  </Product>
+</Wix>

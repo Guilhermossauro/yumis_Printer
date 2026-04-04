@@ -1,4 +1,4 @@
-name: Build and Release Windows EXE
+name: Build and Release Windows App
 
 on:
   push:
@@ -33,12 +33,37 @@ jobs:
         run: |
           python -m PyInstaller --noconfirm --clean YumisPrinter.spec
 
+      - name: Install WiX Toolset
+        shell: pwsh
+        run: |
+          winget install --id WiXToolset.WiXToolset -e --accept-package-agreements --accept-source-agreements
+
+      - name: Build MSI
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          $wixDir = Get-ChildItem "${env:ProgramFiles(x86)}" -Directory | Where-Object { $_.Name -like "WiX Toolset v3*" } | Select-Object -First 1
+          if (-not $wixDir) {
+            throw "WiX Toolset installation was not found."
+          }
+
+          $candle = Join-Path $wixDir.FullName "bin\\candle.exe"
+          $light = Join-Path $wixDir.FullName "bin\\light.exe"
+
+          & $candle -nologo -dProductVersion=$version -arch x64 -out installer\\ installer\\Product.wxs
+          & $light -nologo -out dist\\YumisPrinter-Setup-x64.msi installer\\Product.wixobj
+
       - name: Package artifacts
         shell: pwsh
         run: |
           Compress-Archive -Path dist/YumisPrinter.exe -DestinationPath YumisPrinter-win64.zip -Force
-          $hash = (Get-FileHash dist/YumisPrinter.exe -Algorithm SHA256).Hash.ToLower()
-          "${hash}  YumisPrinter.exe" | Out-File -FilePath SHA256SUMS.txt -Encoding ascii
+          $exeHash = (Get-FileHash dist/YumisPrinter.exe -Algorithm SHA256).Hash.ToLower()
+          $msiHash = (Get-FileHash dist/YumisPrinter-Setup-x64.msi -Algorithm SHA256).Hash.ToLower()
+
+          @(
+            "${exeHash}  YumisPrinter.exe"
+            "${msiHash}  YumisPrinter-Setup-x64.msi"
+          ) | Out-File -FilePath SHA256SUMS.txt -Encoding ascii
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -50,14 +75,17 @@ jobs:
 
             Arquivos inclusos:
             - YumisPrinter.exe (executavel pronto para uso)
+            - YumisPrinter-Setup-x64.msi (instalador profissional para Windows)
             - YumisPrinter-win64.zip (pacote compactado)
             - SHA256SUMS.txt (checksum para verificacao de integridade)
 
             Uso rapido:
-            1. Baixe YumisPrinter.exe diretamente na secao Assets.
+            1. Baixe YumisPrinter-Setup-x64.msi para instalacao guiada no Windows.
+            2. Ou baixe YumisPrinter.exe para executar direto sem instalacao.
             2. Execute o arquivo no computador host da impressora.
             3. Abra a interface e compartilhe as impressoras para a rede local.
           files: |
             dist/YumisPrinter.exe
+            dist/YumisPrinter-Setup-x64.msi
             YumisPrinter-win64.zip
             SHA256SUMS.txt

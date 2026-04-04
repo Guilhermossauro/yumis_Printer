@@ -72,9 +72,9 @@ Pronto. Simples assim.
 
 ## 📥 Como usar
 
-1. Baixe a versão mais recente em **[Releases](https://github.com/SEU_USUARIO/Yumis-Printer/releases)**
-2. Extraia o arquivo
-3. Execute `Yumis' Printer.exe` (Windows)
+1. Baixe a versão mais recente em **[Releases](https://github.com/Guilhermossauro/yumis_Printer/releases)**
+2. Para instalacao guiada, use `YumisPrinter-Setup-x64.msi`
+3. Para execucao direta, use `YumisPrinter.exe`
 4. Permita o acesso na janela do Windows Firewall (se solicitado)
 5. Selecione as impressoras e inicie o servidor
 
