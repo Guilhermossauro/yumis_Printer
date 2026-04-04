@@ -20,11 +20,11 @@
         <Directory Id="INSTALLFOLDER" Name="Yumis Printer" />
       </Directory>
 
-      <Directory Id="ProgramMenuFolder">
+      <Directory Id="CommonProgramsFolder">
         <Directory Id="ApplicationProgramsFolder" Name="Yumis Printer" />
       </Directory>
 
-      <Directory Id="DesktopFolder" />
+      <Directory Id="CommonDesktopFolder" />
     </Directory>
 
     <DirectoryRef Id="INSTALLFOLDER">
@@ -50,7 +50,7 @@
       </Component>
     </DirectoryRef>
 
-    <DirectoryRef Id="DesktopFolder">
+    <DirectoryRef Id="CommonDesktopFolder">
       <Component Id="DesktopShortcutComponent" Guid="0D14F96A-73A6-47D2-A6C6-F6C0117A8D11" Win64="yes">
         <Shortcut
           Id="DesktopShortcut"

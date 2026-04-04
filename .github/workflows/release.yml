@@ -36,21 +36,19 @@ jobs:
       - name: Install WiX Toolset
         shell: pwsh
         run: |
-          winget install --id WiXToolset.WiXToolset -e --accept-package-agreements --accept-source-agreements
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest -Uri "https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip" -OutFile "wix314-binaries.zip"
+          New-Item -ItemType Directory -Path tools\\wix -Force | Out-Null
+          Expand-Archive -Path "wix314-binaries.zip" -DestinationPath tools\\wix -Force
 
       - name: Build MSI
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart('v')
-          $wixDir = Get-ChildItem "${env:ProgramFiles(x86)}" -Directory | Where-Object { $_.Name -like "WiX Toolset v3*" } | Select-Object -First 1
-          if (-not $wixDir) {
-            throw "WiX Toolset installation was not found."
-          }
+          $candle = Resolve-Path "tools\\wix\\candle.exe"
+          $light = Resolve-Path "tools\\wix\\light.exe"
 
-          $candle = Join-Path $wixDir.FullName "bin\\candle.exe"
-          $light = Join-Path $wixDir.FullName "bin\\light.exe"
-
-          & $candle -nologo -dProductVersion=$version -arch x64 -out installer\\ installer\\Product.wxs
+          & $candle -nologo "-dProductVersion=$version" -arch x64 -out installer\\ installer\\Product.wxs
           & $light -nologo -out dist\\YumisPrinter-Setup-x64.msi installer\\Product.wixobj
 
       - name: Package artifacts
