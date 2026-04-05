@@ -48,8 +48,8 @@ jobs:
           $candle = Resolve-Path "tools\\wix\\candle.exe"
           $light = Resolve-Path "tools\\wix\\light.exe"
 
-          & $candle -nologo "-dProductVersion=$version" -arch x64 -out installer\\ installer\\Product.wxs
-          & $light -nologo -out dist\\YumisPrinter-Setup-x64.msi installer\\Product.wixobj
+          & $candle -nologo "-dProductVersion=$version" -arch x64 -out installer\\ installer\\Product.wxs -ext WixFirewallExtension
+          & $light -nologo -out dist\\YumisPrinter-Setup-x64.msi installer\\Product.wixobj -ext WixFirewallExtension
 
       - name: Package artifacts
         shell: pwsh

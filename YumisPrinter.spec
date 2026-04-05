@@ -14,11 +14,33 @@ a = Analysis(
     pathex=[str(root)],
     binaries=[],
     datas=datas,
-    hiddenimports=[],
+    hiddenimports=[
+        "webview.platforms.winforms",
+        "webview.platforms.edgechromium",
+        "win32print",
+        "win32api",
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        # ML / data science — not used by this app
+        "torch", "torchvision", "torchaudio",
+        "tensorflow", "keras",
+        "scipy", "sklearn", "pandas",
+        "cv2", "matplotlib", "seaborn",
+        "nltk", "transformers", "datasets",
+        "onnxruntime",
+        # CLI / cloud tools
+        "yt_dlp", "boto3", "botocore", "awscrt",
+        "pyarrow", "sqlalchemy", "psycopg2",
+        "openpyxl",
+        # Notebooks / interactive
+        "IPython", "jupyter", "notebook",
+        "mako", "alembic",
+        # Tk not needed (using Qt via pywebview)
+        "tkinter", "_tkinter",
+    ],
     noarchive=False,
     optimize=0,
 )

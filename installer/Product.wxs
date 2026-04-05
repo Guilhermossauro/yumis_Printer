@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
+     xmlns:fw="http://schemas.microsoft.com/wix/FirewallExtension">
   <Product
     Id="*"
     Name="Yumis Printer"
@@ -34,6 +35,15 @@
           Source="..\dist\YumisPrinter.exe"
           Name="YumisPrinter.exe"
           KeyPath="yes" />
+        <!-- Firewall rule: allows inbound TCP 8765 from private/domain networks -->
+        <fw:FirewallException
+          Id="FirewallException"
+          Name="Yumis Printer"
+          Description="Yumis Printer - servidor de impressao em rede local"
+          Protocol="tcp"
+          Port="8765"
+          Profile="all"
+          Scope="localSubnet" />
       </Component>
     </DirectoryRef>
 

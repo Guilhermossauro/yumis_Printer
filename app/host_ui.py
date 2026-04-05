@@ -9,7 +9,7 @@ import webview
 from app import config
 from app.print_queue import PrintQueueWorker
 from app.printers import discover_printers
-from app.server import LocalServerThread
+from app.server import LocalServerThread, _try_add_firewall_rule
 from app.state import AppState, PrinterInfo
 from app.utils import get_local_ip_address
 
@@ -148,7 +148,11 @@ class HostAPI:
         ip_address = get_local_ip_address()
         server_url = f"http://{ip_address}:{config.SERVER_PORT}"
         self.state.set_server_url(server_url)
-        
+
+        # Pre-create firewall rule by port so the rule is not tied to the EXE
+        # extraction path (PyInstaller one-file changes path on each run).
+        _try_add_firewall_rule(config.SERVER_PORT)
+
         try:
             self.server_thread = LocalServerThread(
                 self.state,
@@ -157,7 +161,7 @@ class HostAPI:
                 config.SERVER_PORT,
             )
             self.server_thread.start()
-        except OSError as exc:
+        except Exception as exc:
             self.server_thread = None
             self.state.add_log(f"ERRO ao iniciar servidor: {exc}")
             return
@@ -188,14 +192,11 @@ class HostAPI:
 
 
 def get_html_path() -> str:
-    """Get the path to the host HTML file."""
-    base_dir = Path(__file__).parent.parent
-    html_path = base_dir / "templates" / "host.html"
-    
+    """Get the path to the host HTML file, compatible with both frozen EXE and dev mode."""
+    html_path = config.BASE_DIR / "templates" / "host.html"
     if not html_path.exists():
         raise FileNotFoundError(f"Host HTML file not found at {html_path}")
-    
-    return str(html_path)
+    return html_path.as_uri()
 
 
 class HostWindow:
@@ -217,7 +218,7 @@ class HostWindow:
         
         self.webview = webview.create_window(
             title="Yumis' Printer - Painel do Host",
-            url=f"file://{html_path}",
+            url=html_path,
             js_api=self.api,
             width=1400,
             height=900,

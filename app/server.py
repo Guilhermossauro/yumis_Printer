@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 import threading
 from pathlib import Path
 from uuid import uuid4
@@ -12,6 +14,35 @@ from app import config
 from app.print_queue import PrintQueueWorker
 from app.printing import get_pdf_page_count
 from app.state import AppState
+
+
+_FIREWALL_RULE_NAME = "Yumis Printer"
+
+
+def _try_add_firewall_rule(port: int) -> None:
+    """Best-effort: create a Windows Firewall inbound rule by port so the EXE
+    is not blocked regardless of its extraction path (one-file PyInstaller)."""
+    if sys.platform != "win32":
+        return
+    try:
+        flags = 0x08000000  # CREATE_NO_WINDOW
+        # Check if rule already exists
+        check = subprocess.run(
+            ["netsh", "advfirewall", "firewall", "show", "rule",
+             f"name={_FIREWALL_RULE_NAME}"],
+            capture_output=True, timeout=5, creationflags=flags,
+        )
+        if check.returncode == 0:
+            return  # already registered
+        subprocess.run(
+            ["netsh", "advfirewall", "firewall", "add", "rule",
+             f"name={_FIREWALL_RULE_NAME}",
+             "dir=in", "action=allow", "protocol=tcp",
+             f"localport={port}", "profile=private,domain"],
+            capture_output=True, timeout=10, creationflags=flags,
+        )
+    except Exception:
+        pass  # If it fails (e.g. not admin) the Windows dialog will appear instead
 
 
 def create_app(state: AppState, queue_worker: PrintQueueWorker) -> Flask:
