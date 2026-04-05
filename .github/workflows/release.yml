@@ -63,25 +63,19 @@ jobs:
             "${msiHash}  YumisPrinter-Setup-x64.msi"
           ) | Out-File -FilePath SHA256SUMS.txt -Encoding ascii
 
-      - name: Publish GitHub Release
+      - name: Gerar notas da versao
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $notas = Get-Content .github\RELEASE_NOTES.md -Raw -Encoding UTF8
+          $notas = $notas -replace '\$\{TAG\}', $tag
+          $notas | Out-File -FilePath release_notes_final.md -Encoding UTF8
+
+      - name: Publicar release no GitHub
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
-          name: Yumis Printer ${{ github.ref_name }}
-          body: |
-            Release oficial do Yumis Printer para Windows.
-
-            Arquivos inclusos:
-            - YumisPrinter.exe (executavel pronto para uso)
-            - YumisPrinter-Setup-x64.msi (instalador profissional para Windows)
-            - YumisPrinter-win64.zip (pacote compactado)
-            - SHA256SUMS.txt (checksum para verificacao de integridade)
-
-            Uso rapido:
-            1. Baixe YumisPrinter-Setup-x64.msi para instalacao guiada no Windows.
-            2. Ou baixe YumisPrinter.exe para executar direto sem instalacao.
-            2. Execute o arquivo no computador host da impressora.
-            3. Abra a interface e compartilhe as impressoras para a rede local.
+          name: "Yumis Printer ${{ github.ref_name }}"
+          body_path: release_notes_final.md
           files: |
             dist/YumisPrinter.exe
             dist/YumisPrinter-Setup-x64.msi
